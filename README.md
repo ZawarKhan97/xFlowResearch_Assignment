@@ -18,5 +18,12 @@ Build and compile the libpcap
     sudo make install
 
 # Step 2
-Writing Simple Cpp application 
+Build your application
+    cd ..
+    make clean
+    make
+# Step 3
+Run your application with argument of the filename
+    ./x_F_R_AssignmentApp filename
+    
  
