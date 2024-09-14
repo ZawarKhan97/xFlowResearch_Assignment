@@ -1,8 +1,8 @@
 #Make File for compiling the application automatically
 CXX = g++
 
-#compiler Flags
-CXXFLAGS = -Wall -g $(shell pcap-config --cflags)
+#compiler Flags .inlude header files as well
+CXXFLAGS = -Wall -g -I./Include $(shell pcap-config --cflags)
 
 #Link pcacp library with it
 LDFLAGS = $(shell pcap-config --libs)
