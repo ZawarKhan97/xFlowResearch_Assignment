@@ -24,6 +24,6 @@ Build your application
     make
 # Step 3
 Run your application with argument of the filename
-    ./x_F_R_AssignmentApp filename
+    ./x_F_R_AssignmentApp filename.pcap database.db
     
  

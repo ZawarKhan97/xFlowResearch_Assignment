@@ -11,7 +11,7 @@ LDFLAGS = $(shell pcap-config --libs) -lsqlite3
 TARGET = x_F_R_AssignmentApp
 
 #source file to compile are
-SRCS = simpleReadPacketApplication.cpp
+SRCS = simpleReadPacketApplication.cpp PacketProcessLib.cpp
 
 #create and object of the source file
 OBJS= $(SRCS:.cpp=.o)
