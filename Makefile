@@ -5,7 +5,7 @@ CXX = g++
 CXXFLAGS = -Wall -g -I./Include $(shell pcap-config --cflags)
 
 #Link pcacp library with it
-LDFLAGS = $(shell pcap-config --libs)
+LDFLAGS = $(shell pcap-config --libs) -lsqlite3
 
 #Application name
 TARGET = x_F_R_AssignmentApp

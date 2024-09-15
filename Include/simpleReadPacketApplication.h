@@ -27,6 +27,7 @@ struct sip_Fields
 vector<sip_Fields> dataFields;
 
 //function protoypes
+void storeinDb(char * file_Name);
 void modifyField();
 void printFields();
 void processPacket( u_char *arg, const struct pcap_pkthdr* pkthdr,

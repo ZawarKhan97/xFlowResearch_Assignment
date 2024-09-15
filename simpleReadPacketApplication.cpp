@@ -3,10 +3,10 @@
 #include <iostream>
 #include <arpa/inet.h>
 #include <pcap/pcap.h>
-#include <string>
 #include <vector>
 #include "simpleReadPacketApplication.h"
 #include <string.h>
+#include <sqlite3.h>
 
 using namespace std;
 
@@ -71,10 +71,11 @@ int main(int argc, char *argV[])
     else 
         printf("Sip Packets Read from the file Completed \n");
     
-  
+    
     // printFields();
     // modifyField();
     // printFields();
+    storeinDb(file_Name);
     return 0;
 }
 
@@ -95,12 +96,13 @@ void processPacket( u_char *arg, const struct pcap_pkthdr* pkthdr, const u_char 
                         printf("Payload: \n");
                         for( u_int i=0;i<pkthdr->len;i++)
                         {
-                            if( isprint(packet[i]))
-                            {
-                                // printf("%d index %c character",i,packet[i]);
-                                pkttoText+=packet[i];
+                            pkttoText+=packet[i];
+                            // if( isprint(packet[i]))
+                            // {
+                            //     // printf("%d index %c character",i,packet[i]);
+                            //     pkttoText+=packet[i];
                                 
-                            }
+                            // }
                             
                             if((i%16==0 && i!=0) || i==pkthdr->len-1)
                                 continue;
@@ -173,4 +175,69 @@ void modifyField()
         dataFields[i].From=dummy.substr(0,6) +" "+ my_name + " "+ dummy.substr(6);
         
     }
+}
+void storeinDb(char * file_Name)
+{
+    sqlite3 *db;
+    sqlite3_stmt* stmt;
+   
+    char *errBuf=0;
+    char *sql;
+    if (sqlite3_open("x_Flow_DB.db" ,&db))
+    {
+        fprintf(stderr, "Cant Open File : $s \n",sqlite3_errmsg(db));
+        return;
+    }
+    else 
+     cout<<" Data Base Opened"<<endl;
+
+    //create table and populate it with fields
+    sql="CREATE TABLE IF NOT EXISTS SIP("
+    "ID INT PRIMARY KEY NOT NULL,"
+    "PACKET INT NOT NULL,"
+    "FromField TEXT NOT NULL,"
+    "ToField TEXT NOT NULL,"
+    "CALLerID TEXT NOT NULL);";
+
+    if (sqlite3_exec(db,sql,NULL,NULL,&errBuf)!=SQLITE_OK)
+    {
+        cerr<<"Failed to Create Table: "<<errBuf<<endl;
+    }
+    
+    //insert fields into the table
+    // for (size_t i=0; i<dataFields.size();i++)
+    // {
+    //     sql="INSERT INTO SIP(ID,PACKET,FromField,ToField,CALLerID)"
+    //     "VALUES ("+ i + ","+ dataFields[i].PacketCount + ","+ dataFields[i].From + ","
+    //     + dataFields[i].To+ "," + dataFields[i].CallerID+ ");";
+    //      if (sqlite3_exec(db,sql,NULL,NULL,&errBuf)!=SQLITE_OK)
+    //     {
+    //         cerr<<"Failed to insert Table: "<<errBuf<<endl;
+    //     }
+    // }
+    sql="INSERT INTO SIP (ID, PACKET, FromField, ToField, CALLerID) VALUES (?, ?, ?, ?, ?);";
+       // Prepare the SQL statement
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+    // Loop through dataFields and bind values
+    for (size_t i = 0; i < dataFields.size(); ++i) {
+
+        // Bind values to placeholders
+        sqlite3_bind_int(stmt, 1, static_cast<int>(i)); // ID as integer
+        sqlite3_bind_int(stmt, 2, dataFields[i].PacketCount);   // PACKET as integer
+        sqlite3_bind_text(stmt, 3, dataFields[i].From.c_str(), -1, SQLITE_STATIC); // FromField as text
+        sqlite3_bind_text(stmt, 4, dataFields[i].To.c_str(), -1, SQLITE_STATIC);   // ToField as text
+        sqlite3_bind_text(stmt, 5, dataFields[i].CallerID.c_str(), -1, SQLITE_STATIC); // CALLerID as text
+
+        // Execute the statement
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            cerr << "Failed to insert row: " << sqlite3_errmsg(db) << endl;
+        }
+
+        // Reset the statement for the next iteration
+        sqlite3_reset(stmt);
+    }
+    cout<<"Populated the Database"<<endl;
 }
