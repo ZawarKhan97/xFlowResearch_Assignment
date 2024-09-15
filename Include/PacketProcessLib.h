@@ -5,6 +5,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <vector>
+#include <string.h>
 
 using namespace std;
 
@@ -17,14 +18,8 @@ using namespace std;
 #define Field3  "Call-ID"
 #define Field4 "CSeq"
 
-//structure for fields
-struct sip_Fields
-{
-    u_char PacketCount;
-    string From;
-    string To;
-    string CallerID;
-};
+int tmp=0;
+
 
 typedef class PacketProcessLib
 {
@@ -32,8 +27,7 @@ private:
     char * PcapFile;
     char * dBFile;
     int count ;
-    static  int payload_Size;
-    static u_char *payload;
+    
     //declare handle
     pcap_t *handle=NULL;
     //handler to write to dump file
@@ -41,17 +35,12 @@ private:
 
     struct bpf_program fp;
     bpf_u_int32 net;
-
     static void printPacket( u_char *, const struct pcap_pkthdr* , const u_char * );
     static void modifyPacket(u_char *, const struct pcap_pkthdr* , const u_char * );
-    static inline void modifyField();
-    static void parsePayload( u_char *, int, u_char );
     
-
 public:
     char  errbuf[1024];
-    static string my_name;
-    static vector<sip_Fields> dataFields;
+        
 
     //function Prototypes
     PacketProcessLib(char * ,char *);
@@ -60,8 +49,11 @@ public:
     bool filterApply(char * ,char * );
     bool readPackets();
     bool modifyPKT();
-    void printFields();
-    inline void extractFields(u_char count , string);
+    
+    
+    
+    static void parsePayload( u_char *, int, u_char );
+    
      ~PacketProcessLib();
 } processPKT;
 

@@ -2,11 +2,14 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string.h>
+#include <simpleReadPacketApplication.h>
+
+
+
 
 processPKT::PacketProcessLib(char * Filename,char * DbFilename) :PcapFile(Filename),dBFile(DbFilename)
 {
     count=0;
-    my_name="Zawar";
 };
 
 bool processPKT::checkFile()
@@ -70,11 +73,12 @@ bool processPKT::readPackets()
     //loop through the file and retrive packets
     if(pcap_loop(handle,-1,processPKT::printPacket,(u_char*)&count)==-1)
     {
-        cout<<"herer";
+        
         memcpy(errbuf,errbuf,sizeof(errbuf));
         return false;
     }
     else 
+        pcap_close(handle);
         cout<<"Sip Packets Read from the file Completed \n";
     
     return true;
@@ -102,16 +106,19 @@ void processPKT::printPacket( u_char *arg, const struct pcap_pkthdr* pkthdr, con
                             }
                                 
     }
+    
 }
           
 bool processPKT::modifyPKT()
   {
+    handle= pcap_open_offline(PcapFile,errbuf);
     dump=pcap_dump_open(handle,"output.pcap");
     if(dump==NULL)
     {
         cout<<"Eror in opening pcapfile"<<endl;
         return false;
     }
+    
     //loop through the file and retrive packets
     if(pcap_loop(handle,-1,modifyPacket,(u_char *)dump)==-1)
     {
@@ -119,19 +126,24 @@ bool processPKT::modifyPKT()
         return 2;
     }
     else 
-        cout<<("Sip Packets Read from the file Completed \n");
+
+        cout<<("Packet Has been Modified SIP\n");
     return true;
   }
 
 void processPKT::modifyPacket(u_char *arg, const struct pcap_pkthdr* pkthdr, const u_char * packet )
 {
-                        
-    payload_Size=pkthdr->len-(SIZE_IP_HEADER+SIZE_UDP_HEADER);
-    payload=(u_char *)(packet+ SIZE_ETHERNET+SIZE_IP_HEADER+SIZE_UDP_HEADER);
     
-    int  *counter= (int *) arg;
-    string pkttoText;
+    string pkttoText;   
+    int payload_Size=pkthdr->len-(SIZE_IP_HEADER+SIZE_UDP_HEADER);
+    u_char *payload=(u_char *)(packet+ SIZE_ETHERNET+SIZE_IP_HEADER+SIZE_UDP_HEADER);
+
+    
+    int  *counter=&tmp;
+   
     // Extract Fields from the Payload
+    if(payload_Size<100)
+      return;
     parsePayload(payload,payload_Size,++(*counter));
 
     //read and modify the packet
@@ -143,11 +155,10 @@ void processPKT::modifyPacket(u_char *arg, const struct pcap_pkthdr* pkthdr, con
         }
 
         modifyField();
-
+        
         //adjust the packet for new header
-        string newpkt=pkttoText.substr(0,pkttoText.find(Field1))+ dataFields[*counter-1].From
-                                    + dataFields[*counter-1].To+dataFields[*counter-1].CallerID+
-                                        pkttoText.substr(pkttoText.find(Field4));
+        cout<<"counter Value:"<<*counter;
+        string newpkt=editPKT(pkttoText,*counter);
         cout<< endl<< "new Packet: "<<endl<<newpkt<<endl;
         //newpkt Hdr
         u_char *newPktHdr=new u_char[newpkt.size()];
@@ -158,56 +169,24 @@ void processPKT::modifyPacket(u_char *arg, const struct pcap_pkthdr* pkthdr, con
         return;
 }
 
-void processPKT::modifyField()
-{
-    string dummy;
-    for (size_t i=0; i<dataFields.size();i++)
-    {
-        dummy=dataFields[i].From;
-        dataFields[i].From=dummy.substr(0,6) +" "+ my_name + " "+ dummy.substr(6);
-        
-    }
-}
+
 
 void processPKT::parsePayload( u_char *payload, int len, u_char count)
 {
     string text;
     printf("Payload Size: %d \n",len);
-   for (int i=0;i<len;i++)
+    for (int i=0;i<len;i++)
         {
-            if( isprint(payload[i]))
-                {
-                     text+=(payload[i]);
-                }
-                            
+            text+=(payload[i]);
+                                      
             if((i%16==0 && i!=0) || i==len-1)
                 continue;
-        }
-                  
+        }   
+             
     extractFields(count,text);
     
     return;
 }
 
-void processPKT::printFields()
-{
-    for (size_t i=0; i<dataFields.size();i++)
-    {
-        cout<< "Packet Number: "<<dataFields[i].PacketCount<<endl;
-        cout<<dataFields[i].From<<endl;
-        cout<< dataFields[i].To<<endl;
-        cout<< dataFields[i].CallerID<<endl<<endl;
-    }
-}
 
-inline void PacketProcessLib::extractFields(u_char count,string fields)
-{
-    sip_Fields sip_entry;
-    sip_entry.PacketCount=count;
-    sip_entry.From=fields.substr(fields.find(Field1),(fields.find(Field2)-fields.find(Field1)));
-    sip_entry.To=fields.substr(fields.find(Field2),(fields.find(Field3)-fields.find(Field2)));
-    sip_entry.CallerID=fields.substr(fields.find(Field3),(fields.find(Field4)-fields.find(Field3)));
-    dataFields.push_back(sip_entry);
-}
  
-
